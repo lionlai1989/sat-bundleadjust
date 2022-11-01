@@ -23,7 +23,7 @@ import shutil
 from bundle_adjust import loader, ba_utils, geo_utils, cam_utils
 from bundle_adjust.ba_pipeline import BundleAdjustmentPipeline
 from bundle_adjust.loader import flush_print
-
+import re
 
 def get_acquisition_date(geotiff_path):
     """
@@ -33,9 +33,23 @@ def get_acquisition_date(geotiff_path):
     import rasterio
 
     with rasterio.open(geotiff_path) as src:
+        print("src tags: ", src.tags(), src.tags().keys())
         if "TIFFTAG_DATETIME" in src.tags().keys():
             date_string = src.tags()["TIFFTAG_DATETIME"]
             dt = datetime.datetime.strptime(date_string, "%Y:%m:%d %H:%M:%S")
+        elif "METADATATYPE" in src.tags().keys(): # pneo or pleiades
+            print("hello: ", geotiff_path)
+            matched = re.match(r"^.*IMG_P(.*)_([0-9]*)_PAN_SEN_.*$", str(geotiff_path))
+            date_string = matched.group(2)
+            print("matched: ", matched, matched.group(2), )
+            print("date_string: ", date_string) 
+
+            dt = datetime.datetime.strptime(date_string, "%Y%m%d%H%M%S%f")
+        elif "AREA_OR_POINT" in src.tags().keys(): # pneo or pleiades
+            print("world: ", geotiff_path)
+            matched = re.match(r"^.*IMG_P(.*)_([0-9]*)_PAN_SEN_.*$", str(geotiff_path))
+            date_string = matched.group(2)
+            dt = datetime.datetime.strptime(date_string, "%Y%m%d%H%M%S%f")
         else:
             # temporary fix in case the previous tag is missing
             # get datetime from skysat geotiff identifier
@@ -192,7 +206,7 @@ class Scene:
         geotiff_paths = sorted(glob.glob(os.path.join(self.geotiff_dir, "**/*.tif"), recursive=True))
         if self.geotiff_label is not None:
             geotiff_paths = [os.path.basename(fn) for fn in geotiff_paths if self.geotiff_label in fn]
-
+        print("geotiff_paths: ", geotiff_paths)
         for tif_fname in geotiff_paths:
 
             f_id = loader.get_id(tif_fname)
@@ -200,6 +214,7 @@ class Scene:
             # load rpc
             if self.rpc_src == "geotiff":
                 rpc = rpcm.rpc_from_geotiff(tif_fname)
+                print("rpc: ", rpc)
             elif self.rpc_src == "json":
                 with open(os.path.join(self.rpc_dir, f_id + ".json")) as f:
                     d = json.load(f)
