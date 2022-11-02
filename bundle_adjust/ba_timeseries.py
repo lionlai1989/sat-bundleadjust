@@ -37,18 +37,19 @@ def get_acquisition_date(geotiff_path):
         if "TIFFTAG_DATETIME" in src.tags().keys():
             date_string = src.tags()["TIFFTAG_DATETIME"]
             dt = datetime.datetime.strptime(date_string, "%Y:%m:%d %H:%M:%S")
-        elif "METADATATYPE" in src.tags().keys(): # pneo or pleiades
+        elif "METADATATYPE" in src.tags().keys(): # pleiades
             print("hello: ", geotiff_path)
-            matched = re.match(r"^.*IMG_P(.*)_([0-9]*)_PAN_SEN_.*$", str(geotiff_path))
+            matched = re.match(r"^.*IMG_PHR(.*)_([0-9]*)_SEN_.*$", str(geotiff_path))
             date_string = matched.group(2)
-            print("matched: ", matched, matched.group(2), )
             print("date_string: ", date_string) 
 
             dt = datetime.datetime.strptime(date_string, "%Y%m%d%H%M%S%f")
-        elif "AREA_OR_POINT" in src.tags().keys(): # pneo or pleiades
+        elif "AREA_OR_POINT" in src.tags().keys(): # pneo
             print("world: ", geotiff_path)
             matched = re.match(r"^.*IMG_P(.*)_([0-9]*)_PAN_SEN_.*$", str(geotiff_path))
             date_string = matched.group(2)
+            print("date_string: ", date_string) 
+
             dt = datetime.datetime.strptime(date_string, "%Y%m%d%H%M%S%f")
         else:
             # temporary fix in case the previous tag is missing
@@ -203,7 +204,7 @@ class Scene:
         all_im_rpcs = []
         all_im_datetimes = []
 
-        geotiff_paths = sorted(glob.glob(os.path.join(self.geotiff_dir, "**/*.tif"), recursive=True))
+        geotiff_paths = sorted(glob.glob(os.path.join(self.geotiff_dir, "**/*.JP2"), recursive=True))
         if self.geotiff_label is not None:
             geotiff_paths = [os.path.basename(fn) for fn in geotiff_paths if self.geotiff_label in fn]
         print("geotiff_paths: ", geotiff_paths)
